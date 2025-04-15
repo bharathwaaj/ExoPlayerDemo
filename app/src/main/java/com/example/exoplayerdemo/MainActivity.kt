@@ -3,57 +3,63 @@ package com.example.exoplayerdemo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import com.tpstreams.player.TPStreamsPlayer
 import com.example.exoplayerdemo.ui.theme.ExoPlayerDemoTheme
+import android.widget.FrameLayout
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 
 class MainActivity : ComponentActivity() {
-    private lateinit var player: ExoPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 🔹 Set up ExoPlayer
-        player = ExoPlayer.Builder(this).build().apply {
-            val mediaItem = MediaItem.fromUri("https://storage.googleapis.com/exoplayer-test-media-0/play.mp3")
-            setMediaItem(mediaItem)
-            prepare()
-            play()
-        }
-        enableEdgeToEdge()
+
+        // ✅ Init TPStreams SDK once (global)
+        TPStreamsPlayer.init("6332n7")
+
+        // ✅ Build MediaItem using asset ID and access token
+        val mediaItem: MediaItem = TPStreamsPlayer.buildMediaItem(
+            assetId = "8Ky3yJ2f6ke",
+            accessToken = "acd03746-594d-4177-b1f3-044328f0cc17"
+        )
+
         setContent {
             ExoPlayerDemoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val context = LocalContext.current
+                    val player = remember { TPStreamsPlayer(context) }
+
+                    DisposableEffect(Unit) {
+                        player.setMediaItem(mediaItem)
+                        player.prepare()
+                        player.play()
+
+                        onDispose {
+                            player.release()
+                        }
+                    }
+
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { ctx ->
+                            PlayerView(ctx).apply {
+                                this.player = player
+                                useController = true
+                            }
+                        }
                     )
-                    VideoPlayer(player = player, modifier = Modifier.fillMaxSize())
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ExoPlayerDemoTheme {
-        Greeting("Android")
     }
 }
