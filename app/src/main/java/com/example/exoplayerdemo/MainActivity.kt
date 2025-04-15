@@ -6,53 +6,55 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.ui.PlayerView
 import com.tpstreams.player.TPStreamsPlayer
-import com.example.exoplayerdemo.ui.theme.ExoPlayerDemoTheme
-import android.widget.FrameLayout
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ Init TPStreams SDK once (global)
         TPStreamsPlayer.init("6332n7")
 
-        // ✅ Build MediaItem using asset ID and access token
-        val mediaItem: MediaItem = TPStreamsPlayer.buildMediaItem(
-            assetId = "8Ky3yJ2f6ke",
-            accessToken = "acd03746-594d-4177-b1f3-044328f0cc17"
-        )
-
         setContent {
-            ExoPlayerDemoTheme {
+            val context = LocalContext.current
+            val player = remember { TPStreamsPlayer(context) }
+            var mediaItem by remember { mutableStateOf<MediaItem?>(null) }
+
+            // launch coroutine to fetch MediaItem
+            LaunchedEffect(Unit) {
+                mediaItem = TPStreamsPlayer.buildMediaItem(
+                    assetId = "8rEx9apZHFF",
+                    accessToken = "19aa0055-d965-4654-8fce-b804e70a46b0"
+                )
+            }
+
+            DisposableEffect(Unit) {
+                onDispose { player.release() }
+            }
+
+            mediaItem?.let {
+                player.setMediaItem(it)
+                player.prepare()
+                player.play()
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val context = LocalContext.current
-                    val player = remember { TPStreamsPlayer(context) }
-
-                    DisposableEffect(Unit) {
-                        player.setMediaItem(mediaItem)
-                        player.prepare()
-                        player.play()
-
-                        onDispose {
-                            player.release()
-                        }
-                    }
-
                     AndroidView(
                         modifier = Modifier.fillMaxSize(),
-                        factory = { ctx ->
-                            PlayerView(ctx).apply {
+                        factory = {
+                            PlayerView(it).apply {
                                 this.player = player
                                 useController = true
                             }
