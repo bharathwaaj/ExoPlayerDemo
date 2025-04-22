@@ -3,19 +3,19 @@ package com.example.exoplayerdemo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
 import androidx.media3.ui.PlayerView
 import com.tpstreams.player.TPStreamsPlayer
 
@@ -27,14 +27,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val context = LocalContext.current
-            val player = remember { TPStreamsPlayer(context) }
-            var mediaItem by remember { mutableStateOf<MediaItem?>(null) }
-
-            // launch coroutine to fetch MediaItem
-            LaunchedEffect(Unit) {
-                mediaItem = TPStreamsPlayer.buildMediaItem(
-                    assetId = "8rEx9apZHFF",
-                    accessToken = "19aa0055-d965-4654-8fce-b804e70a46b0"
+            val player = remember {
+                TPStreamsPlayer.create(
+                    context = context,
+                    assetId = "8Ky3yJ2f6ke",
+                    accessToken = "acd03746-594d-4177-b1f3-044328f0cc17",
+                    shouldAutoPlay = false // manual playback
                 )
             }
 
@@ -42,24 +40,28 @@ class MainActivity : ComponentActivity() {
                 onDispose { player.release() }
             }
 
-            mediaItem?.let {
-                player.setMediaItem(it)
-                player.prepare()
-                player.play()
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AndroidView(
-                        modifier = Modifier.fillMaxSize(),
-                        factory = {
-                            PlayerView(it).apply {
-                                this.player = player
-                                useController = true
-                            }
+            Column(modifier = Modifier.fillMaxSize()) {
+                // ✅ ExoPlayer View
+                AndroidView(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16 / 9f),
+                    factory = {
+                        PlayerView(it).apply {
+                            this.player = player
+                            useController = true
                         }
-                    )
+                    }
+                )
+
+                // ✅ Play Button
+                Button(
+                    onClick = { player.play() },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text("Play Video")
                 }
             }
         }
